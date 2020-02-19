@@ -1,5 +1,6 @@
 const express = require('express')
 const cheerio = require('cheerio')
+const cors = require('cors')
 const morgan = require('morgan')
 const axios = require('axios')
 
@@ -10,7 +11,9 @@ const eztvurl="https://eztv.io/search/"
 const app=express();
 
 // Middlewares
+app.use(cors())
 app.use(morgan('combined'))
+
 
 const port=process.env.PORT || 8080
 
@@ -21,6 +24,7 @@ app.get("/piratebay/search",async (req,res) => {
     const result = await axios.get(`${piratebayurl}${req.query.q}/0/99/0`)
     const $ = await cheerio.load(result.data)
     let torrents = []
+    let id=1
     $('tr').each((i, etr) => {
         let tor = {}
         $(etr).find('td').each((i, etd) => {
@@ -38,11 +42,13 @@ app.get("/piratebay/search",async (req,res) => {
                 const uploadedDate = deta[0].split(" ")[1]
                 const size = deta[1].split(" ")[2]
                 const uploadedBy = deta[2].split(" ")[3]
+                tor.size=size
+                tor.id=id
                 tor.details = {
                     uploadedDate,
-                    size,
                     uploadedBy
                 }
+                id++
             }
         })
         $(etr).find('td[align="right"]').each((j, etd) => {
@@ -51,6 +57,7 @@ app.get("/piratebay/search",async (req,res) => {
             if (j === 1) tor.leechers = seed_leech
         })
         if (Object.keys(tor).length != 0) torrents.push(tor)
+        id++
     })
     res.send(torrents)
 })
@@ -61,6 +68,7 @@ app.get("/eztv/search",async (req,res) => {
     const result = await axios.get(`${eztvurl}${query}`)
     const $ = await cheerio.load(result.data)
     let torrents = []
+    let id=1
     $('tr[name="hover"]').each((i, etr) => {
         let tor= {}
         $(etr).find('td').each((j,etd)=> {
@@ -69,7 +77,7 @@ app.get("/eztv/search",async (req,res) => {
                     const title = $(etd).find('a').text()
                     const torrentUrl = $(etd).find('a').attr('href')
                     tor.title=title
-                    tor.torrentUrl=torrentUrl
+                    tor.torrentUrl=`https://eztv.io/${torrentUrl}`
                 case 2:
                     const magnetUrl = $(etd).find('a').attr('href')
                     tor.magnetUrl=magnetUrl
@@ -80,7 +88,10 @@ app.get("/eztv/search",async (req,res) => {
                     const seeders = $(etd).find('font[color="green"]').text()
                     tor.seeders =seeders
             }
+            tor.id=id
+            id++
         })
+        id++
         torrents.push(tor)
     })
     res.send(torrents)
