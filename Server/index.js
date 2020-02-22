@@ -15,7 +15,7 @@ app.use(cors())
 app.use(morgan('combined'))
 
 
-const port=process.env.PORT || 8080
+const port=process.env.PORT || 3001
 
 // Routes
 
@@ -53,8 +53,8 @@ app.get("/piratebay/search",async (req,res) => {
         })
         $(etr).find('td[align="right"]').each((j, etd) => {
             let seed_leech = $(etd).text()
-            if (j === 0) tor.seeders = seed_leech
-            if (j === 1) tor.leechers = seed_leech
+            if (j === 0) tor.seeders = seed_leech === '' ? '-' : seed_leech
+            if (j === 1) tor.leechers = seed_leech === '' ? '-' : seed_leech
         })
         if (Object.keys(tor).length != 0) torrents.push(tor)
         id++
@@ -86,7 +86,7 @@ app.get("/eztv/search",async (req,res) => {
                     tor.size=size
                 case 5:
                     const seeders = $(etd).find('font[color="green"]').text()
-                    tor.seeders =seeders
+                    tor.seeders =seeders === '' ? '-' : seeders
             }
             tor.id=id
             id++
